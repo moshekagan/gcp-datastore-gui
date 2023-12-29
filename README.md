@@ -18,4 +18,4 @@
 1. `cd client` 
 2. `yarn` or `npm install`
 4. `yarn dev` or `npm run dev`
-5. open http://localhost:8002
+5. open http://localhost:8003
