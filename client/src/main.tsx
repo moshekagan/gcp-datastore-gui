@@ -197,7 +197,6 @@ function Index() {
             )
                 .then((res) => {
                     res.data.entities.map((entity: any, index: number) => {
-                        entity.id = index + 1;
                         entity.view = "";
                         entities.push(entity);
                     });
@@ -228,10 +227,12 @@ function Index() {
 
 
     const handleSelectKeyValues = (values: GridSelectionModelChangeParams) => {
+        console.log("ada", values)
         const keys: any[] = [];
+
         entities.map((entity: any) => {
-            if (values.selectionModel.includes(String(entity.id))) {
-                keys.push(entity["ID/Name"]);
+            if (values.includes(entity.id)) {
+                keys.push(entity.id);
             }
         });
         setSelectedKeys(keys);
@@ -241,16 +242,16 @@ function Index() {
     const handleDeleteEntities = () => {
         const deleteEntities = async () => {
             await Axios.delete(
-                "/namespace/" +
-                namespace +
-                "/kind/" +
-                kind,
+                HOST + "/namespace/" + namespace + "/kind/" + kind,
                 {data: {keys: selectedKeys}}
             )
                 .then((res) => {
+                    debugger
                     selectKind(kind);
                 })
                 .catch((error) => {
+                    debugger
+                    selectKind(kind);
                 });
         };
 
@@ -355,7 +356,7 @@ function Index() {
             {/* Entities */}
             <main className={classes.entities}>
                 <Toolbar/>
-                <IconButton onClick={() => selectKind(kind)}>
+                <IconButton onClick={() => selectKind(kind)} id={"refresh"}>
                     <ReplayIcon/>
                 </IconButton>
                 <IconButton onClick={handleConfirmOpen}>
@@ -372,9 +373,7 @@ function Index() {
                         setAnchorEl(cell.element ? cell.element : null);
                         setCellOpen(true);
                     }}
-                    onSelectionModelChange={(
-                        selectedIds: GridSelectionModelChangeParams
-                    ) => {
+                    onSelectionModelChange={(selectedIds: GridSelectionModelChangeParams) => {
                         handleSelectKeyValues(selectedIds);
                     }}
                     selectionModel={selectedRowIds}

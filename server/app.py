@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request, redirect
 from google.cloud import datastore
 import os
 from flask_cors import CORS
-from google.cloud.datastore import Key
+from google.cloud.datastore import Key, Entity
 
 app = Flask(__name__)
 CORS(app)
@@ -54,14 +54,16 @@ def get_kinds(namespace):
 
     return jsonify({"kinds": kinds})
 
-def _parse_entity(entity):
+ID_KEY = "id"
+def _parse_entity(entity, client):
     res = {}
     for k, v in dict(entity).items():
+        res[ID_KEY] = entity.id
         if type(v) is Key:
-            res[k] = f"{str(v)}"
+            source = client.get(v)
+            res[k] = f"{source}"
         else:
             res[k] = v
-
     return res
 
 
@@ -71,7 +73,7 @@ def get_entities(namespace, kind):
     query = client.query(kind=kind)
 
     entities = list(query.fetch())
-    response_entities = [_parse_entity(entity) for entity in entities]
+    response_entities = [_parse_entity(entity, client) for entity in entities]
 
     return jsonify({"entities": response_entities})
 
@@ -101,7 +103,9 @@ def get_properties(namespace, kind):
     print("ASDsa")
     print(list(response_entities[0].keys() if len(response_entities) > 0 else []))
 
-    return jsonify({"properties": list(response_entities[0].keys() if len(response_entities) > 0 else [])})
+    properties = list(response_entities[0].keys() if len(response_entities) > 0 else [])
+    properties.insert(0, ID_KEY)
+    return jsonify({"properties": properties})
 
 
 @app.route('/namespace/<namespace>/kind/<kind>', methods=['DELETE'])
@@ -109,7 +113,8 @@ def delete_entities(namespace, kind):
     client = get_client()
     data = request.json
 
-    keys = [datastore.Key(k.split('/')[1], int(k.split('/')[2]), project=PROJECT_ID) for k in data["keys"]]
+    # keys = [client.key(kind, _id) for _id in data["keys"]]
+    keys = [datastore.Key(kind, int(_id), project=PROJECT_ID) for _id in data["keys"]]
     client.delete_multi(keys)
 
     return jsonify({"status": "success"})
